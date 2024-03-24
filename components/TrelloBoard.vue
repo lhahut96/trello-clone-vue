@@ -12,7 +12,13 @@
         v-for="column in columns"
         :key="column.id"
       >
-        <header class="font-bold mb-4">
+        <header class="task-header font-bold mb-4 relative">
+          <button
+            class="delete-button hidden absolute top-0 right-0 text-xs text-red-400 w-6 h-6 flex items-center justify-center"
+            @click="deleteColumn(column)"
+          >
+            <DeleteIcon />
+          </button>
           <DraggableHandle />
           <input
             class="bg-transparent focus:bg-white rounded px-1 w-4/5"
@@ -99,12 +105,22 @@ const createColumn = async () => {
 };
 
 const backspace = (column: Column) => {
-  column.title === ""
-    ? (columns.value = columns.value.filter((c) => c.id !== column.id))
-    : null;
+  column.title === "" ? deleteColumn(column) : null;
+};
+
+const deleteColumn = (column: Column) => {
+  columns.value = columns.value.filter((c) => c.id !== column.id);
 };
 
 const alt = useKeyModifier("Alt");
 </script>
 
-<style scoped></style>
+<style scoped>
+.task-header {
+  &:hover {
+    .delete-button {
+      display: flex;
+    }
+  }
+}
+</style>
