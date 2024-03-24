@@ -1,45 +1,61 @@
 <template>
-  <VueDraggable
-    :animation="150"
-    v-model="columns"
-    handle=".drag-handle"
-    group="columns"
-    class="flex gap-4 overflow-auto items-start"
-  >
-    <div
-      class="column bg-gray-200 p-5 rounded min-w-[250px]"
-      v-for="column in columns"
-      :key="column.id"
+  <div class="flex gap-4 overflow-auto">
+    <VueDraggable
+      :animation="150"
+      v-model="columns"
+      handle=".drag-handle"
+      group="columns"
+      class="flex gap-4 items-start relative"
     >
-      <h2 class="font-bold mb-4">
-        <DraggableHandle></DraggableHandle>
-        {{ column.title }}
-      </h2>
-
-      <VueDraggable
-        v-model="column.tasks"
-        handle=".drag-handle"
-        :animation="90"
-        :group="{ name: 'tasks', pull: alt ? 'clone' : true }"
+      <div
+        class="column bg-gray-200 p-5 rounded min-w-[250px]"
+        v-for="column in columns"
+        :key="column.id"
       >
-        <TrelloBoardTask
-          v-for="task in column.tasks"
-          :task="task"
-          :key="task.id"
-        />
-      </VueDraggable>
-      <button class="text-gray-500">+ Add Task</button>
-    </div>
-  </VueDraggable>
+        <header class="font-bold mb-4">
+          <DraggableHandle />
+          <input
+            class="bg-transparent focus:bg-white rounded px-1 w-4/5"
+            @keyup.enter="($event.target as HTMLInputElement).blur()"
+            @keydown.backspace="backspace(column)"
+            type="text"
+            v-model="column.title"
+          />
+        </header>
+
+        <VueDraggable
+          v-model="column.tasks"
+          handle=".drag-handle"
+          :animation="90"
+          :group="{ name: 'tasks', pull: alt ? 'clone' : true }"
+          invertSwap
+        >
+          <TrelloBoardTask
+            v-for="task in column.tasks"
+            :task="task"
+            :key="task.id"
+            @delete="deleteTask(task, column.id)"
+          />
+        </VueDraggable>
+        <NewTask @add="(task) => column.tasks.push(task)" />
+      </div>
+    </VueDraggable>
+    <button
+      @click="createColumn"
+      class="bg-gray-200 p-2 rounded min-w-[100px] h-fit"
+    >
+      + Add New Column
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
-import type { Column } from "@/types";
-import { useKeyModifier } from "@vueuse/core";
+import type { Column, Task } from "@/types";
+import { useKeyModifier, useLocalStorage } from "@vueuse/core";
 import { nanoid } from "nanoid";
 import { VueDraggable } from "vue-draggable-plus";
 
-const columns = ref<Column[]>([
+const columns = useLocalStorage<Column[]>("trelloBoard", [
   {
     id: nanoid(),
     title: "Backlog",
@@ -62,6 +78,31 @@ const columns = ref<Column[]>([
     ],
   },
 ]);
+
+const deleteTask = (task: Task, columnID: String) => {
+  const column = columns.value.find((column) => column.id === columnID);
+  if (column) {
+    column.tasks = column.tasks.filter((t) => t.id !== task.id);
+  }
+};
+
+const createColumn = async () => {
+  columns.value.push({
+    id: nanoid(),
+    title: "",
+    tasks: [],
+  });
+  await nextTick(() => {
+    const columns = document.querySelectorAll(".column");
+    columns[columns.length - 1].querySelector("input")?.focus();
+  });
+};
+
+const backspace = (column: Column) => {
+  column.title === ""
+    ? (columns.value = columns.value.filter((c) => c.id !== column.id))
+    : null;
+};
 
 const alt = useKeyModifier("Alt");
 </script>
