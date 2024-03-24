@@ -1,21 +1,44 @@
 <template>
-  <div class="flex gap-4 overflow-auto items-start">
+  <VueDraggable
+    :animation="150"
+    v-model="columns"
+    handle=".drag-handle"
+    group="columns"
+    class="flex gap-4 overflow-auto items-start"
+  >
     <div
       class="column bg-gray-200 p-5 rounded min-w-[250px]"
       v-for="column in columns"
       :key="column.id"
     >
-      <h2 class="font-bold mb-4">{{ column.title }}</h2>
-      <TrelloBoardTask v-for="task in column.tasks" :task="task" :key="task.id">
-      </TrelloBoardTask>
+      <h2 class="font-bold mb-4">
+        <DraggableHandle></DraggableHandle>
+        {{ column.title }}
+      </h2>
+
+      <VueDraggable
+        v-model="column.tasks"
+        handle=".drag-handle"
+        :animation="90"
+        :group="{ name: 'tasks', pull: alt ? 'clone' : true }"
+      >
+        <TrelloBoardTask
+          v-for="task in column.tasks"
+          :task="task"
+          :key="task.id"
+        />
+      </VueDraggable>
       <button class="text-gray-500">+ Add Task</button>
     </div>
-  </div>
+  </VueDraggable>
 </template>
 
 <script setup lang="ts">
 import type { Column } from "@/types";
+import { useKeyModifier } from "@vueuse/core";
 import { nanoid } from "nanoid";
+import { VueDraggable } from "vue-draggable-plus";
+
 const columns = ref<Column[]>([
   {
     id: nanoid(),
@@ -39,6 +62,8 @@ const columns = ref<Column[]>([
     ],
   },
 ]);
+
+const alt = useKeyModifier("Alt");
 </script>
 
 <style scoped></style>
